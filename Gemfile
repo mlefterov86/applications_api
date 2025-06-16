@@ -45,3 +45,15 @@ group :development do
   # gem "spring"
 end
 
+group :development, :test do
+  # Call 'byebug' anywhere in the code to stop execution and get a debugger console
+  gem 'byebug'
+
+  gem 'rspec-rails'
+  gem 'factory_bot_rails'
+end
+
+group :test do
+  gem 'shoulda-matchers'
+end
+

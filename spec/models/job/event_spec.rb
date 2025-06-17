@@ -18,3 +18,14 @@ RSpec.describe Job::Event, type: :model do
     it { is_expected.to have_db_column(:updated_at).of_type(:datetime) }
   end
 end
+
+# == Schema Information
+#
+# Table name: job_events
+#
+#  id         :integer          not null, primary key
+#  type       :string
+#  job_id     :integer          not null
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
+#

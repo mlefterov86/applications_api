@@ -3,3 +3,5 @@ require:
   - rubocop-rspec
   - rubocop-rspec_rails
   - rubocop-factory_bot
+Style/Documentation:
+  Enabled: false

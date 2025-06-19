@@ -9,8 +9,8 @@ RSpec.describe Job, type: :model do
   end
 
   describe 'scopes' do
-    context 'when searching for active jobs' do
-      let!(:activated_event) {  create(:job_event_activated, created_at: 1.day.from_now) }
+    describe '.active' do
+      let!(:activated_event) { create(:job_event_activated, created_at: 1.day.from_now) }
 
       before { create(:job_event_deactivated) }
 
@@ -19,13 +19,54 @@ RSpec.describe Job, type: :model do
       end
     end
 
-    context 'when searching for deactivated jobs' do
+    describe '.deactivated' do
       let!(:deactivated_event) { create(:job_event_deactivated, created_at: 1.day.from_now) }
 
       before { create(:job_event_activated) }
 
       it 'returns deactivated jobs by latest created_at event' do
         expect(described_class.deactivated).to eq [deactivated_event.job]
+      end
+    end
+
+    describe '.with_recent_application_events' do
+      subject(:with_recent_application_events) { described_class.with_recent_application_events }
+
+      let!(:job_with_hired_event) do
+        create(:application_event_hired, created_at: 1.day.ago).application.job
+      end
+
+      let!(:job_with_rejected_event) do
+        create(:application_event_rejected, created_at: 2.days.ago).application.job
+      end
+
+      let!(:job_with_ongoing_event) do
+        create(:application_event_interview, created_at: 3.days.ago).application.job
+      end
+
+      let!(:job_with_note_event) do
+        create(:application_event_note, created_at: 4.days.ago).application.job
+      end
+
+      it 'returns jobs with recent application events excluding notes' do
+        expect(with_recent_application_events).to include(job_with_hired_event, job_with_rejected_event,
+                                                          job_with_ongoing_event)
+      end
+
+      it 'retuns jobs excluding notes' do
+        expect(with_recent_application_events).not_to include(job_with_note_event)
+      end
+
+      it 'calculates hired counts correctly' do
+        expect(with_recent_application_events.first.hired_count).to eq(1)
+      end
+
+      it 'calculates rejected counts correctly' do
+        expect(with_recent_application_events.first.rejected_count).to eq(1)
+      end
+
+      it 'calculates ongoing counts correctly' do
+        expect(with_recent_application_events.first.ongoing_count).to eq(1)
       end
     end
   end

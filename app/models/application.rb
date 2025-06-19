@@ -4,6 +4,8 @@ class Application < ApplicationRecord
   belongs_to :job
   has_many :events, class_name: 'Application::Event', dependent: :destroy
 
+  validates :job, presence: true
+
   # This scope is used to find applications that have been hired.
   # It excludes notes from the latest event check, assuming they don't affect the status.
   # It uses a subquery to find the latest event for each application.
@@ -65,18 +67,40 @@ class Application < ApplicationRecord
       )
   }
 
+  scope :with_notes_count, lambda {
+    joins(<<~SQL.squish)
+      LEFT JOIN (
+        SELECT application_id, COUNT(*) AS notes_count
+        FROM application_events
+        WHERE type = 'Application::Event::Note'
+        GROUP BY application_id
+      ) notes ON notes.application_id = applications.id
+    SQL
+      .select('applications.*', 'COALESCE(notes.notes_count, 0) AS notes_count')
+  }
+
+  scope :with_last_interviewed_at, lambda {
+    select(<<~SQL.squish)
+      applications.*,
+      (
+        SELECT MAX(e.created_at)
+        FROM application_events e
+        WHERE e.application_id = applications.id
+          AND e.type = 'Application::Event::Interview'
+      ) AS last_interviewed_at
+    SQL
+  }
   def status
-    last = events.where.not(type: 'Application::Event::Note').order(created_at: :desc).first
-    case last&.type
+    last_event = events
+                 .reject { |e| e.type == 'Application::Event::Note' }
+                 .max_by(&:created_at)
+
+    case last_event&.type
     when 'Application::Event::Interview' then 'interview'
     when 'Application::Event::Hired'     then 'hired'
-    when 'Application::Event::Rejected' then 'rejected'
+    when 'Application::Event::Rejected'  then 'rejected'
     else 'applied'
     end
-  end
-
-  def notes_count
-    events.where(type: 'Application::Event::Note').count
   end
 end
 

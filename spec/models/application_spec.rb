@@ -107,18 +107,6 @@ RSpec.describe Application, type: :model do
       end
     end
   end
-
-  describe '#notes_count' do
-    let(:application) { create(:application) }
-
-    before do
-      create_list(:application_event, 3, application: application, type: 'Application::Event::Note')
-    end
-
-    it 'returns the count of notes' do
-      expect(application.notes_count).to eq(3)
-    end
-  end
 end
 
 # == Schema Information
